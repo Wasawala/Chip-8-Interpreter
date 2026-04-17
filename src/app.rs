@@ -1,46 +1,54 @@
 use std::time::Duration;
 use sdl3::{Sdl, VideoSubsystem, event::Event, keyboard::Keycode, pixels::Color, render::Canvas, video::Window};
 
+use crate::chip8::Interpreter;
+
 pub struct WindowSpecs {
     name : String,
     width : u32,
-    height : u32
+    height : u32,
+    centered : bool,
+    fullscreen : bool
 }
 
 impl WindowSpecs {
-    pub fn new(name : String, width : u32, height : u32) -> Self {
+    pub fn new(name : String, width : u32, height : u32, centered : bool, fullscreen : bool) -> Self {
         Self {
             name,
             width,
-            height
+            height,
+            centered,
+            fullscreen
         }
     }
 }
 pub struct App {
     sdl_context: Sdl,
     video: VideoSubsystem,
-    canvas: Canvas<Window>
+    canvas: Canvas<Window>,
+    interpreter: Interpreter
 }
 
 impl App {
 
-    pub fn new(specs : WindowSpecs, centered : bool, fullscreen : bool) -> Self {
+    pub fn new(specs : WindowSpecs, rom_path : &str) -> Self {
         let context = sdl3::init().unwrap();
         let video = context.video().unwrap();
-        let canvas = Self::create_window(&video, specs, centered, fullscreen);
+        let canvas = Self::create_window(&video, specs);
         Self {
             sdl_context: context,
             video: video,
-            canvas: canvas
+            canvas: canvas,
+            interpreter : Interpreter::new(rom_path)
         }
     }
 
-    fn create_window(video : &VideoSubsystem, specs : WindowSpecs, centered : bool, fullscreen : bool) -> Canvas<Window> {
+    fn create_window(video : &VideoSubsystem, specs : WindowSpecs) -> Canvas<Window> {
         let mut window_builder = video.window(&specs.name, specs.width, specs.height);
-        if centered {
+        if specs.centered {
             window_builder.position_centered();
         }
-        if fullscreen {
+        if specs.fullscreen {
             window_builder.fullscreen();
         }
 
