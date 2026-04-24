@@ -10,7 +10,7 @@ extern crate sdl3;
 fn main() {
     let args = Command::new("CHIP-8 Interpreter")
         .about("Basic command line CHIP-8 Interpreter")
-        .arg(Arg::new("file").short('f').required(true))
+        .arg(Arg::new("file").required(true))
         .arg(
             Arg::new("width")
                 .default_value("640")

@@ -69,16 +69,12 @@ impl App {
 
     pub fn run(&mut self) {
         self.canvas.set_draw_color(Color::RGB(255, 255, 255));
-        self.canvas.clear();
-        self.canvas.present();
 
         let texture_creator = self.canvas.texture_creator();
 
         let texture = &mut texture_creator
             .create_texture_streaming(PixelFormat::RGB24, WIDTH, HEIGHT)
             .unwrap();
-
-        self.interpreter.dump_memory();
 
         let mut last_time = sdl3::timer::performance_counter();
         let freq = sdl3::timer::performance_frequency() as f64;
