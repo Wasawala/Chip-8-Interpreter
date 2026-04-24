@@ -16,7 +16,7 @@ fn main() {
     let filepath = args.get_one::<String>("file").expect("required");
     println!("-f: {:?}", filepath);
 
-    let specs: WindowSpecs = WindowSpecs::new("Title".to_string(), 640, 480, true, true);
+    let specs: WindowSpecs = WindowSpecs::new("Title".to_string(), 640, 320, true, false);
     let mut app: App = App::new(specs, filepath);
 
     app.run();

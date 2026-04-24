@@ -65,8 +65,19 @@ impl App {
 
         self.interpreter.dump_memory();
 
+        let mut last_time = sdl3::timer::performance_counter();
+        let freq = sdl3::timer::performance_frequency() as f64;
+
         let mut event_pump = self.sdl_context.event_pump().unwrap();
         'running: loop {
+            let current_time = sdl3::timer::performance_counter();
+            let delta_time = (current_time - last_time) as f64 / freq;
+
+            if delta_time > 1.0 / 60.0 {
+                last_time = current_time;
+                self.interpreter.dec_timers();
+            }
+
             self.canvas.clear();
 
             for event in event_pump.poll_iter() {
