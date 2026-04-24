@@ -2,8 +2,8 @@ use rand::RngExt;
 use sdl3::{
     keyboard::{KeyboardState, Scancode},
     pixels::PixelFormat,
-    render::Canvas,
-    video::Window,
+    render::{Canvas, Texture, TextureCreator},
+    video::{Window, WindowContext},
 };
 use std::fs::{self};
 
@@ -83,12 +83,7 @@ impl Interpreter {
         }
     }
 
-    pub fn draw(&self, canvas: &mut Canvas<Window>) {
-        let texture_creator = canvas.texture_creator();
-        let mut texture = texture_creator
-            .create_texture_streaming(PixelFormat::RGB24, WIDTH as u32, HEIGHT as u32)
-            .unwrap();
-
+    pub fn draw(&mut self, canvas: &mut Canvas<Window>, texture: &mut Texture) {
         let mut data = [0u8; WIDTH * HEIGHT * 3];
 
         for i in 0..(WIDTH * HEIGHT) {
@@ -105,14 +100,14 @@ impl Interpreter {
             }
         }
 
-        texture.update(None, &data, WIDTH * 4).unwrap();
+        texture.update(None, &data, WIDTH * 3).unwrap();
         texture.set_scale_mode(sdl3::render::ScaleMode::Nearest);
-        canvas.copy(&texture, None, None).unwrap();
+        canvas.copy(texture, None, None).unwrap();
     }
 
     pub fn next_instruction(&mut self, keyboard_state: KeyboardState) {
-        let opcode: u16 = ((self.chip8.memory[self.chip8.pc as usize] as u16) << 8) // High byte
-                            | (self.chip8.memory[self.chip8.pc as usize + 1] as u16); // Low byte
+        let opcode: u16 = ((self.chip8.memory[self.chip8.pc as usize] as u16) << 8)
+            | (self.chip8.memory[self.chip8.pc as usize + 1] as u16);
 
         let NNN: u16 = opcode & ADDRESS_MASK;
         let NN: u8 = (opcode & BYTE_CONSTANT_MASK) as u8;
@@ -184,7 +179,7 @@ impl Interpreter {
 
             // Vx += NN
             0x7000 => {
-                self.chip8.V[X] += NN;
+                self.chip8.V[X] = self.chip8.V[X].wrapping_add(NN);
             }
 
             0x8000 => match opcode & 0xF {

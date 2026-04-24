@@ -1,10 +1,17 @@
 use sdl3::{
-    Sdl, VideoSubsystem, event::Event, keyboard::Keycode, pixels::Color, render::Canvas,
+    Sdl, VideoSubsystem,
+    event::Event,
+    keyboard::Keycode,
+    pixels::{Color, PixelFormat},
+    render::Canvas,
     video::Window,
 };
 use std::time::Duration;
 
 use crate::chip8::Interpreter;
+
+const WIDTH: u32 = 64;
+const HEIGHT: u32 = 32;
 
 pub struct WindowSpecs {
     name: String,
@@ -37,11 +44,13 @@ impl App {
         let context = sdl3::init().unwrap();
         let video = context.video().unwrap();
         let canvas = Self::create_window(&video, specs);
+
+        let interpreter = Interpreter::new(rom_path);
         Self {
             sdl_context: context,
             video,
             canvas,
-            interpreter: Interpreter::new(rom_path),
+            interpreter,
         }
     }
 
@@ -62,6 +71,12 @@ impl App {
         self.canvas.set_draw_color(Color::RGB(255, 255, 255));
         self.canvas.clear();
         self.canvas.present();
+
+        let texture_creator = self.canvas.texture_creator();
+
+        let texture = &mut texture_creator
+            .create_texture_streaming(PixelFormat::RGB24, WIDTH, HEIGHT)
+            .unwrap();
 
         self.interpreter.dump_memory();
 
@@ -95,7 +110,7 @@ impl App {
             self.interpreter
                 .next_instruction(event_pump.keyboard_state());
 
-            self.interpreter.draw(&mut self.canvas);
+            self.interpreter.draw(&mut self.canvas, texture);
             self.canvas.present();
             std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
         }
