@@ -1,9 +1,8 @@
 use rand::RngExt;
 use sdl3::{
     keyboard::{KeyboardState, Scancode},
-    pixels::PixelFormat,
-    render::{Canvas, Texture, TextureCreator},
-    video::{Window, WindowContext},
+    render::{Canvas, Texture},
+    video::Window,
 };
 use std::fs::{self};
 
@@ -21,7 +20,7 @@ const FONT_START_ADDRESS: usize = 0x050;
 struct Chip8System {
     memory: [u8; 4 * KB as usize],
     display: [bool; 64 * 32],
-    address_register: u16,
+    I: u16,
     pc: u16,
     delay_timer: u8,
     sound_timer: u8,
@@ -34,7 +33,7 @@ impl Chip8System {
         Self {
             memory: mem,
             display: [false; 64 * 32],
-            address_register: 0,
+            I: 0,
             pc: START_ADDRESS,
             delay_timer: 0,
             sound_timer: 0,
@@ -112,7 +111,6 @@ impl Interpreter {
         let NNN: u16 = opcode & ADDRESS_MASK;
         let NN: u8 = (opcode & BYTE_CONSTANT_MASK) as u8;
         let N: u8 = (opcode & HALF_BYTE_CONSTANT_MASK) as u8;
-        let I = NNN;
         let X: usize = ((opcode & X_REGISTER_MASK) >> 8) as usize;
         let Y: usize = ((opcode & Y_REGISTER_MASK) >> 4) as usize;
 
@@ -261,7 +259,7 @@ impl Interpreter {
 
             // I = NNN
             0xA000 => {
-                self.chip8.address_register = I;
+                self.chip8.I = NNN;
             }
 
             // PC = V0 + NNN
@@ -279,6 +277,26 @@ impl Interpreter {
             0xD000 => {
                 self.draw_sprite(X as u8, Y as u8, N);
             }
+
+            0xE000 => match opcode & 0x00FF {
+                0x9E => {
+                    let key = self.decode_keycode(keyboard_state);
+                    if key == self.chip8.V[X] {
+                        self.chip8.pc += 2;
+                    }
+                }
+
+                0xA1 => {
+                    let key = self.decode_keycode(keyboard_state);
+                    if key != self.chip8.V[X] {
+                        self.chip8.pc += 2;
+                    }
+                }
+
+                _ => {
+                    println!("unknown instruction {:04X}", opcode);
+                }
+            },
 
             0xF000 => match opcode & 0xFF {
                 // Vx = delay_timer
@@ -308,33 +326,32 @@ impl Interpreter {
 
                 // I += Vx
                 0x1E => {
-                    self.chip8.address_register += self.chip8.V[X] as u16;
+                    self.chip8.I += self.chip8.V[X] as u16;
                 }
 
                 // I = sprite at Vx
                 0x29 => {
-                    self.chip8.address_register =
-                        (FONT_START_ADDRESS + (self.chip8.V[X] as usize * 5)) as u16;
+                    self.chip8.I = (FONT_START_ADDRESS + (self.chip8.V[X] as usize * 5)) as u16;
                 }
 
                 // set BCD of Vx starting at I
                 0x33 => {
-                    self.chip8.memory[I as usize] = self.chip8.V[X] / 100;
-                    self.chip8.memory[I as usize + 1] = (self.chip8.V[X] % 100) / 10;
-                    self.chip8.memory[I as usize + 2] = self.chip8.V[X] % 10;
+                    self.chip8.memory[self.chip8.I as usize] = (self.chip8.V[X] / 100) % 10;
+                    self.chip8.memory[self.chip8.I as usize + 1] = (self.chip8.V[X] / 10) % 10;
+                    self.chip8.memory[self.chip8.I as usize + 2] = self.chip8.V[X] % 10;
                 }
 
                 // store registers 0 to X starting at I
                 0x55 => {
                     for i in 0..=X {
-                        self.chip8.memory[I as usize + i] = self.chip8.V[i];
+                        self.chip8.memory[self.chip8.I as usize + i] = self.chip8.V[i];
                     }
                 }
 
                 // load registers 0 to X starting at I
                 0x65 => {
                     for i in 0..=X {
-                        self.chip8.V[i] = self.chip8.memory[I as usize + i];
+                        self.chip8.V[i] = self.chip8.memory[self.chip8.I as usize + i];
                     }
                 }
 
@@ -364,7 +381,7 @@ impl Interpreter {
                 break 'draw_y;
             }
 
-            let cur_byte = self.chip8.memory[(self.chip8.address_register + y as u16) as usize];
+            let cur_byte = self.chip8.memory[(self.chip8.I + y as u16) as usize];
 
             'fill_x: for x in 0..8 {
                 if (x_start + x) == WIDTH {
