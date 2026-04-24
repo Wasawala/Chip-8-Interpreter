@@ -11,7 +11,7 @@ You will need to have cargo installed.
 To compile, type:
 
 ```bash
-cargo build
+cargo build --release
 ```
 
 ## Usage
