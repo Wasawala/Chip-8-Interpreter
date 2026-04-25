@@ -33,7 +33,7 @@ For more help run:
 ```
 
 ## Controls
-
+```text
 CHIP-8 Keypad        Keyboard
 +-+-+-+-+            +-+-+-+-+
 |1|2|3|C|            |1|2|3|4|
@@ -44,7 +44,7 @@ CHIP-8 Keypad        Keyboard
 +-+-+-+-+            +-+-+-+-+
 |A|0|B|F|            |Z|X|C|V|
 +-+-+-+-+            +-+-+-+-+
-
+```
 You can also quit the program using the ESCAPE key.
 
 
